@@ -29,9 +29,9 @@ def must_read_config_file(filename):
             fatal(f"config error: invalid value {section[name]} for {name}")
 
     return {
-        "gpio_clk": must_get_int("gpio_clk"),
-        "gpio_ep": must_get_int("gpio_ep"),
-        "gpio_ph": must_get_int("gpio_ph"),
+        "gpio-clk": must_get_int("gpio-clk"),
+        "gpio-ep": must_get_int("gpio-ep"),
+        "gpio-ph": must_get_int("gpio-ph"),
     }
 
 INPUT = "in"
@@ -60,9 +60,9 @@ def main():
     args = parser.parse_args()
 
     config = must_read_config_file(args.config)
-    gpio_clk = config["gpio_clk"]
-    gpio_ep = config["gpio_ep"]
-    gpio_ph = config["gpio_ph"]
+    gpio_clk = config["gpio-clk"]
+    gpio_ep = config["gpio-ep"]
+    gpio_ph = config["gpio-ph"]
 
     if args.dry_run:
         print(f"setting power state to ep={args.ep_state} ph={args.ph_state}")
