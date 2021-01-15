@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-VERSION=0.1
+VERSION=0.0.1
 GIT_SHA=$(git rev-parse --short HEAD)
 
 build_dir=$(mktemp -d)
