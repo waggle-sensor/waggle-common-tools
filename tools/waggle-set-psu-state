@@ -1,11 +1,38 @@
 #!/usr/bin/env python3
 import argparse
+import configparser
 from pathlib import Path
+import sys
 import time
 
-CLK = 241
-DATA_EP = 242
-DATA_PH = 243
+def fatal(*args, **kwargs):
+    print(*args, **kwargs, flush=True)
+    sys.exit(1)
+
+def must_read_config_file(filename):
+    config = configparser.ConfigParser()
+
+    if not config.read(filename):
+        fatal(f"could not read config file {filename}")
+
+    try:
+        section = config["psu_control"]
+    except KeyError:
+        fatal(f"config error: must have section [psu_control]")
+
+    def must_get_int(name):
+        try:
+            return int(section[name])
+        except KeyError:
+            fatal(f"config error: must have value for {name}")
+        except ValueError:
+            fatal(f"config error: invalid value {section[name]} for {name}")
+
+    return {
+        "gpio_clk": must_get_int("gpio_clk"),
+        "gpio_ep": must_get_int("gpio_ep"),
+        "gpio_ph": must_get_int("gpio_ph"),
+    }
 
 INPUT = "in"
 OUTPUT = "out"
@@ -26,27 +53,39 @@ def set_gpio_value(num: int, value: str):
 def main():
     choices = ["on", "off"]
     parser = argparse.ArgumentParser()
-    parser.add_argument("ep-state", choices=choices, help="edge processor power state")
-    parser.add_argument("ph-state", choices=choices, help="peripherals power state")
+    parser.add_argument("-C", "--config", default="/etc/sage/config.ini", help="config file to use")
+    parser.add_argument("--dry-run", action="store_true", help="config file to use")
+    parser.add_argument("ep_state", choices=choices, help="edge processor power state")
+    parser.add_argument("ph_state", choices=choices, help="peripherals power state")
     args = parser.parse_args()
 
+    config = must_read_config_file(args.config)
+    gpio_clk = config["gpio_clk"]
+    gpio_ep = config["gpio_ep"]
+    gpio_ph = config["gpio_ph"]
+
+    if args.dry_run:
+        print(f"setting power state to ep={args.ep_state} ph={args.ph_state}")
+        print(f"using config {config}")
+        return
+
     # ensure gpios are setup
-    ensure_gpio_exported(CLK)
-    ensure_gpio_exported(DATA_EP)
-    ensure_gpio_exported(DATA_PH)
+    ensure_gpio_exported(gpio_clk)
+    ensure_gpio_exported(gpio_ep)
+    ensure_gpio_exported(gpio_ph)
     time.sleep(0.01)
-    set_gpio_direction(CLK, OUTPUT)
-    set_gpio_direction(DATA_EP, OUTPUT)
-    set_gpio_direction(DATA_PH, OUTPUT)
+    set_gpio_direction(gpio_clk, OUTPUT)
+    set_gpio_direction(gpio_ep, OUTPUT)
+    set_gpio_direction(gpio_ph, OUTPUT)
     time.sleep(0.01)
 
     # set desired states then clock the latch
-    set_gpio_value(DATA_EP, HIGH if args.ep_state == "on" else LOW)
-    set_gpio_value(DATA_PH, HIGH if args.ph_state == "on" else LOW)
+    set_gpio_value(gpio_ep, HIGH if args.ep_state == "on" else LOW)
+    set_gpio_value(gpio_ph, HIGH if args.ph_state == "on" else LOW)
     time.sleep(0.01)
-    set_gpio_value(CLK, LOW)
+    set_gpio_value(gpio_clk, LOW)
     time.sleep(0.01)
-    set_gpio_value(CLK, HIGH)
+    set_gpio_value(gpio_clk, HIGH)
     time.sleep(0.01)
 
 if __name__ == "__main__":
