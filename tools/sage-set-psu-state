@@ -16,9 +16,9 @@ def must_read_config_file(filename):
         fatal(f"could not read config file {filename}")
 
     try:
-        section = config["psu_control"]
+        section = config["psu-control"]
     except KeyError:
-        fatal(f"config error: must have section [psu_control]")
+        fatal(f"config error: must have section [psu-control]")
 
     def must_get_int(name):
         try:
@@ -29,6 +29,7 @@ def must_read_config_file(filename):
             fatal(f"config error: invalid value {section[name]} for {name}")
 
     return {
+        
         "gpio-clk": must_get_int("gpio-clk"),
         "gpio-ep": must_get_int("gpio-ep"),
         "gpio-ph": must_get_int("gpio-ph"),
