@@ -8,15 +8,18 @@ fi
 GIT_SHA=$(git rev-parse --short HEAD)
 
 build_dir=$(mktemp -d)
+NAME=sage-common-tools
+ARCH=all
+VERSION=${RELEASE_VERSION}-${GIT_SHA}
 
 # add package description
 mkdir -p $build_dir/DEBIAN
 cat <<EOF > $build_dir/DEBIAN/control
-Package: sage-common-tools
-Version: ${RELEASE_VERSION}-${GIT_SHA}
+Package: ${NAME}
+Version: ${VERSION}
 Maintainer: sagecontinuum.org
 Description: Common tools for Sage OS administration and operations.
-Architecture: all
+Architecture: ${ARCH}
 Priority: optional
 EOF
 
@@ -25,4 +28,4 @@ mkdir -p $build_dir/usr/bin
 cp tools/* $build_dir/usr/bin
 
 # build deb
-dpkg-deb --build $build_dir "sage-common-tools_${RELEASE_VERSION}_${GIT_SHA}.deb"
+dpkg-deb --root-owner-group --build $build_dir "${NAME}_${VERSION}_${ARCH}.deb"
