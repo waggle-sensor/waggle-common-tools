@@ -5,9 +5,11 @@ from pathlib import Path
 import sys
 import time
 
+
 def fatal(*args, **kwargs):
     print(*args, **kwargs, flush=True)
     sys.exit(1)
+
 
 def must_read_config_file(filename):
     config = configparser.ConfigParser()
@@ -29,11 +31,11 @@ def must_read_config_file(filename):
             fatal(f"config error: invalid value {section[name]} for {name}")
 
     return {
-        
         "gpio-clk": must_get_int("gpio-clk"),
         "gpio-ep": must_get_int("gpio-ep"),
         "gpio-ph": must_get_int("gpio-ph"),
     }
+
 
 INPUT = "in"
 OUTPUT = "out"
@@ -41,20 +43,26 @@ OUTPUT = "out"
 LOW = "0"
 HIGH = "1"
 
+
 def ensure_gpio_exported(num: int):
     if not Path(f"/sys/class/gpio/gpio{num}").exists():
         Path("/sys/class/gpio/export").write_text(str(num))
 
+
 def set_gpio_direction(num: int, dir: str):
     Path(f"/sys/class/gpio/gpio{num}/direction").write_text(dir)
+
 
 def set_gpio_value(num: int, value: str):
     Path(f"/sys/class/gpio/gpio{num}/value").write_text(value)
 
+
 def main():
     choices = ["on", "off"]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-C", "--config", default="/etc/sage/config.ini", help="config file to use")
+    parser.add_argument(
+        "-C", "--config", default="/etc/waggle/config.ini", help="config file to use"
+    )
     parser.add_argument("--dry-run", action="store_true", help="config file to use")
     parser.add_argument("ep_state", choices=choices, help="edge processor power state")
     parser.add_argument("ph_state", choices=choices, help="peripherals power state")
@@ -88,6 +96,7 @@ def main():
     time.sleep(0.01)
     set_gpio_value(gpio_clk, HIGH)
     time.sleep(0.01)
+
 
 if __name__ == "__main__":
     main()
