@@ -1,31 +1,39 @@
 #!/bin/bash -e
 
-if [ -z "$RELEASE_VERSION" ]; then
-    echo "RELEASE_VERSION must be defined"
-    exit 1
+print_help() {
+  echo """
+usage: build.sh [-f]
+Create the versioned Debian package.
+ -f : force the build to proceed (debugging only) without checking for tagged commit
+"""
+}
+
+FORCE=
+while getopts "f?" opt; do
+  case $opt in
+    f) # force build
+      echo "** Force build: ignore tag depth check **"
+      FORCE=1
+      ;;
+    ?|*)
+      print_help
+      exit 1
+      ;;
+  esac
+done
+
+# determine full version
+VERSION_SHORT=$(git describe --tags --dirty | cut -c2-)
+VERSION_LONG=$(git describe --tags --long --dirty | cut -c2-)
+
+TAG_DEPTH=$(echo ${VERSION_LONG} | cut -d '-' -f 2)
+if [[ -z "${FORCE}" && "${TAG_DEPTH}_" != "0_" ]]; then
+  echo "Error:"
+  echo "  The current git commit has not been tagged. Please create a new tag first to ensure a proper unique version number."
+  echo "  Use -f to ignore error (for debugging only)."
+  exit 1
 fi
 
-GIT_SHA=$(git rev-parse --short HEAD)
-
-build_dir=$(mktemp -d)
-NAME=waggle-common-tools
-ARCH=all
-VERSION=${RELEASE_VERSION}-${GIT_SHA}
-
-# add package description
-mkdir -p $build_dir/DEBIAN
-cat <<EOF > $build_dir/DEBIAN/control
-Package: ${NAME}
-Version: ${VERSION}
-Maintainer: sagecontinuum.org
-Description: Common tools for Waggle OS administration and operations.
-Architecture: ${ARCH}
-Priority: optional
-EOF
-
-# add package tools
-mkdir -p $build_dir/usr/bin
-cp tools/* $build_dir/usr/bin
-
-# build deb
-dpkg-deb --root-owner-group --build $build_dir "${NAME}_${VERSION}_${ARCH}.deb"
+docker build -t waggle-common-tools .
+docker run --rm \
+-v `pwd`:/output/ -e VERSION_SHORT=$VERSION_SHORT -e VERSION_LONG=$VERSION_LONG waggle-common-tools ./release.sh
