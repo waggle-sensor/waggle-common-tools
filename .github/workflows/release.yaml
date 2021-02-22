@@ -16,7 +16,7 @@ jobs:
         id: build_project
         run: |
           ./build.sh
-          echo "##[set-output name=deb_sage_common_tools;]$(ls *.deb)"
+          echo "##[set-output name=deb_waggle_common_tools;]$(ls *.deb)"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -27,13 +27,13 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset (Sage Common Tools)
-        id: upload-release-asset-sage-common-tools
+      - name: Upload Release Asset (Waggle Common Tools)
+        id: upload-release-asset-waggle-common-tools
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.build_project.outputs.deb_sage_common_tools }}
-          asset_name: ${{ steps.build_project.outputs.deb_sage_common_tools }}
+          asset_path: ./${{ steps.build_project.outputs.deb_waggle_common_tools }}
+          asset_name: ${{ steps.build_project.outputs.deb_waggle_common_tools }}
           asset_content_type: application/vnd.debian.binary-package

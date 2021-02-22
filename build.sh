@@ -8,7 +8,7 @@ fi
 GIT_SHA=$(git rev-parse --short HEAD)
 
 build_dir=$(mktemp -d)
-NAME=sage-common-tools
+NAME=waggle-common-tools
 ARCH=all
 VERSION=${RELEASE_VERSION}-${GIT_SHA}
 
@@ -18,7 +18,7 @@ cat <<EOF > $build_dir/DEBIAN/control
 Package: ${NAME}
 Version: ${VERSION}
 Maintainer: sagecontinuum.org
-Description: Common tools for Sage OS administration and operations.
+Description: Common tools for Waggle OS administration and operations.
 Architecture: ${ARCH}
 Priority: optional
 EOF
