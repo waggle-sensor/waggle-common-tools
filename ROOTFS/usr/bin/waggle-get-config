@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+import argparse
+import configparser
+import sys
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-C", "--config", default="/etc/waggle/config.ini", help="config file to use"
+    )
+    parser.add_argument("-s", "--section", help="section in config file")
+    parser.add_argument("-k", "--key", help="key within section in config file")
+    args = parser.parse_args()
+
+    if not args.section:
+        sys.exit(f"Error: config 'section' must be specified")
+    if not args.key:
+        sys.exit(f"Error: config 'key' must be specified")
+
+    config = configparser.ConfigParser()
+
+    if not config.read(args.config):
+        sys.exit(f"Error: could not read config file {args.config}")
+
+    try:
+        section = config[args.section]
+    except KeyError:
+        sys.exit(f"Error: unable to locate section [{args.section}]")
+
+    try:
+        value = section[args.key]
+    except KeyError:
+        sys.exit(f"Error: unable to locate key [{args.section}: {args.key}]")
+
+    # print the value of the requested config entry
+    print(f"{value}", end="")
+
+
+if __name__ == "__main__":
+    main()
