@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+import argparse
+import time
+import json
+from typing import NamedTuple, Any
+from pathlib import Path
+import re
+from uuid import uuid4
+
+# Backwards compatibility hack for time_ns func in Python < 3.7
+# See: https://docs.python.org/3/library/time.html#time.process_time_ns
+try:
+    from time import time_ns
+except Exception:
+    def time_ns():
+        return int(time.time() * 1e9)
+
+
+# TODO consolidate this with pywaggle bit. would be nice to not have to install pywaggle
+# in base image
+class Message(NamedTuple):
+    name: str
+    value: Any
+    timestamp: int
+    meta: dict
+
+
+def dump_message(msg: Message) -> bytes:
+    payload = {
+        "name": msg.name,
+        "ts": msg.timestamp,
+        "meta": msg.meta,
+        "val": msg.value,
+    }
+
+    return json.dumps(payload, separators=(",", ":"))
+
+
+def infer_type(s):
+    for mapper in [int, float]:
+        try:
+            return mapper(s)
+        except ValueError:
+            continue
+    # always fallback to string
+    return s
+
+type_mapper = {
+    "": infer_type, 
+    "int": int,
+    "float": float,
+    "str": str,
+}
+
+def build_meta_dict(metalist):
+    meta = {}
+    for s in metalist:
+        k, v = s.split("=", 1)
+        meta[k] = v
+    return meta
+
+
+def isvalidname(s):
+    return re.match(r"[A-Za-z0-9_.-]+$", s) is not None
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data-dir", default="/run/metrics", type=Path, help="path used to store metrics data")
+    parser.add_argument("--time", default=time_ns(), type=int, help="timestamp to use")
+    parser.add_argument("--meta", action="append", default=[], help="metadata tag")
+    parser.add_argument("--type", default="", help="value type. (infer from value by default)")
+    parser.add_argument("name", help="metric name")
+    parser.add_argument("value", help="metric value")
+    args = parser.parse_args()
+
+    if not isvalidname(args.name):
+        raise ValueError("invalid name")
+
+    value = type_mapper[args.type](args.value)
+    meta = build_meta_dict(args.meta)
+
+    # write to ".ts" temp file then rename to "ts" after write is done
+    # TODO decide "level of randomness" needed to suffix.
+    basename = str(args.time) + "-" + uuid4().hex[:8]
+    tmpfile = Path(args.data_dir, args.name, "." + basename)
+    outfile = Path(tmpfile.parent, basename)
+
+    tmpfile.parent.mkdir(parents=True, exist_ok=True)
+    tmpfile.write_text(dump_message(Message(
+        name=args.name,
+        value=value,
+        timestamp=args.time,
+        meta=meta,
+    )))
+
+    tmpfile.rename(outfile)
+
+
+if __name__ == "__main__":
+    main()
