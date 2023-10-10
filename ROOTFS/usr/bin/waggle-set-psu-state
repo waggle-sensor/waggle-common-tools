@@ -91,7 +91,7 @@ def main():
     # set desired states then clock the latch
     ep_state = "on" if get_gpio_value(gpio_ep) == HIGH else "off"    
     if ep_state == args.ep_state:
-        print(f"ep remains in the same state")
+        print(f"ep state unmodified")
     else:
         set_gpio_direction(gpio_clk, OUTPUT)
         set_gpio_direction(gpio_ep, OUTPUT)
@@ -100,7 +100,7 @@ def main():
 
     ph_state = "on" if get_gpio_value(gpio_ph) == HIGH else "off"
     if ph_state == args.ph_state:
-        print(f"ph remains in the same state")
+        print(f"ph state unmodified")
     else:
         set_gpio_direction(gpio_clk, OUTPUT)
         set_gpio_direction(gpio_ph, OUTPUT)
