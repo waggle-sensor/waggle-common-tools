@@ -57,6 +57,10 @@ def set_gpio_value(num: int, value: str):
     Path(f"/sys/class/gpio/gpio{num}/value").write_text(value)
 
 
+def get_gpio_value(num: int) -> str:
+    return Path(f"/sys/class/gpio/gpio{num}/value").read_text().strip()
+
+
 def main():
     choices = ["on", "off"]
     parser = argparse.ArgumentParser()
@@ -82,15 +86,26 @@ def main():
     ensure_gpio_exported(gpio_clk)
     ensure_gpio_exported(gpio_ep)
     ensure_gpio_exported(gpio_ph)
-    time.sleep(0.01)
-    set_gpio_direction(gpio_clk, OUTPUT)
-    set_gpio_direction(gpio_ep, OUTPUT)
-    set_gpio_direction(gpio_ph, OUTPUT)
-    time.sleep(0.01)
+    time.sleep(0.001)
 
     # set desired states then clock the latch
-    set_gpio_value(gpio_ep, HIGH if args.ep_state == "on" else LOW)
-    set_gpio_value(gpio_ph, HIGH if args.ph_state == "on" else LOW)
+    ep_state = "on" if get_gpio_value(gpio_ep) == HIGH else "off"    
+    if ep_state == args.ep_state:
+        print(f"ep state unmodified")
+    else:
+        set_gpio_direction(gpio_clk, OUTPUT)
+        set_gpio_direction(gpio_ep, OUTPUT)
+        time.sleep(0.001)
+        set_gpio_value(gpio_ep, HIGH if args.ep_state == "on" else LOW)
+
+    ph_state = "on" if get_gpio_value(gpio_ph) == HIGH else "off"
+    if ph_state == args.ph_state:
+        print(f"ph state unmodified")
+    else:
+        set_gpio_direction(gpio_clk, OUTPUT)
+        set_gpio_direction(gpio_ph, OUTPUT)
+        time.sleep(0.001)
+        set_gpio_value(gpio_ph, HIGH if args.ph_state == "on" else LOW)
     time.sleep(0.01)
     set_gpio_value(gpio_clk, LOW)
     time.sleep(0.01)
